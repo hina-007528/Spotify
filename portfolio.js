@@ -123,7 +123,7 @@ async function getSongs(folder) {
 }
 
 const playMusic = (track, pause = false) => {
-  currentSong.src = `/${currFolder}/` + track;
+  currentSong.src = `/${currFolder}/` + encodeURIComponent(track);
   if (!pause) {
     currentSong
       .play()
@@ -170,8 +170,8 @@ async function displayAlbums() {
   let cardContainer = document.querySelector(".cardContainer");
   let folders = Object.keys(songsData);
 
-  folders.forEach(async (folder) => {
-      let a = await fetch(`/songs/${folder}/info.json`);
+  for (const folder of folders) {
+      let a = await fetch(`/songs/${encodeURIComponent(folder)}/info.json`);
 
       if (a.ok) {
         let response = await a.json();
@@ -187,26 +187,29 @@ async function displayAlbums() {
 
 
 </div>
-                        <img src="/songs/${folder}/cover.jpeg" alt="">
+                        <img src="/songs/${encodeURIComponent(folder)}/cover.jpeg" alt="">
                         <h2>${response.title}</h2>
                         <p>${response.description}</p></div>`;
-        //load the playlist whenever card is clicked
-        Array.from(document.getElementsByClassName("card")).forEach((e) => {
-          // Remove old listeners to prevent duplicates (rudimentary approach)
-          let new_element = e.cloneNode(true);
-          e.parentNode.replaceChild(new_element, e);
-          new_element.addEventListener("click", async (items) => {
-            console.log(items, items.currentTarget.dataset);
-            songs = await getSongs(
-              `songs/${items.currentTarget.dataset.folder}`
-            );
-            if(songs && songs.length > 0) {
-              playMusic(songs[0]);
-              play.src = "pause.svg";
-            }
-          });
-        });
       }
+  }
+  
+  //load the playlist whenever card is clicked
+  Array.from(document.getElementsByClassName("card")).forEach((e) => {
+    // Remove old listeners to prevent duplicates (rudimentary approach)
+    let new_element = e.cloneNode(true);
+    if(e.parentNode) {
+        e.parentNode.replaceChild(new_element, e);
+    }
+    new_element.addEventListener("click", async (items) => {
+      console.log(items, items.currentTarget.dataset);
+      songs = await getSongs(
+        `songs/${items.currentTarget.dataset.folder}`
+      );
+      if(songs && songs.length > 0) {
+        playMusic(songs[0]);
+        play.src = "pause.svg";
+      }
+    });
   });
 }
 
@@ -218,7 +221,7 @@ async function main() {
     playMusic(songs[0], true);
   }
   //display all albums on the page
-  displayAlbums();
+  await displayAlbums();
   // // Show all the songs in playlist
   // let songUL = document
   //   .querySelector(".songList")
